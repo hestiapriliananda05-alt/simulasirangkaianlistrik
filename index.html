@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Edukasi: Misi Kelistrikan Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Nunito:wght@400;600;800&family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-blue: #0ea5e9;
+            --neon-yellow: #eab308;
+            --dark-bg: #0f172a;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--dark-bg);
+            color: #e2e8f0;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(234, 179, 8, 0.15), transparent 25%);
+        }
+
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-digital { font-family: 'Share Tech Mono', monospace; }
+
+        /* Efek Listrik / Neon Global */
+        .neon-text-blue { text-shadow: 0 0 5px var(--neon-blue), 0 0 20px var(--neon-blue); }
+        .neon-text-yellow { text-shadow: 0 0 5px var(--neon-yellow), 0 0 20px var(--neon-yellow); }
+        .neon-box-blue {
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.5), inset 0 0 10px rgba(14, 165, 233, 0.2);
+            border: 1px solid var(--neon-blue);
+        }
+
+        /* Transisi Halaman SPA */
+        .page { display: none; opacity: 0; transition: opacity 0.5s ease-in-out; }
+        .page.active { display: flex; opacity: 1; }
+
+        /* --- STYLES KHUSUS SIMULATOR --- */
+        .workspace-bg {
+            background-size: 60px 60px;
+            background-image: 
+                linear-gradient(to right, rgba(14, 165, 233, 0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(14, 165, 233, 0.15) 1px, transparent 1px);
+        }
+        #hover-highlight { transition: top 0.05s, left 0.05s; }
+        .tool-btn { transition: background-color 0.1s, border-color 0.1s; border-left: 4px solid transparent; touch-action: manipulation; }
+        .tool-btn:hover { background-color: #1e293b; }
+        .tool-active { background-color: #0ea5e920 !important; border-left: 4px solid #0ea5e9 !important; }
+
+        @keyframes electronFlow { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
+        .electron-line { stroke-dasharray: 5 10; animation: electronFlow 0.8s linear infinite; }
+        .bulb-glow { filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.9)); }
+        
+        #workspace-container::-webkit-scrollbar { width: 14px; height: 14px; }
+        #workspace-container::-webkit-scrollbar-track { background: #0f172a; border-left: 1px solid #1e293b; border-top: 1px solid #1e293b; }
+        #workspace-container::-webkit-scrollbar-thumb { background: #0ea5e950; border-radius: 8px; border: 3px solid #0f172a; }
+        #workspace-container::-webkit-scrollbar-thumb:hover { background: #0ea5e9; }
+        #workspace-container { scrollbar-width: thin; scrollbar-color: #0ea5e950 #0f172a; }
+
+        /* KUIS & ANIMASI */
+        @keyframes spark { 0% { transform: scale(0.5); opacity: 1; fill: #ef4444; } 50% { fill: #eab308; } 100% { transform: scale(2); opacity: 0; fill: #ef4444; } }
+        .spark-anim circle { animation: spark 0.8s infinite; transform-origin: center; }
+        .spark-anim circle:nth-child(2) { animation-delay: 0.2s; }
+        .spark-anim circle:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes switchClose { 0% { transform: rotate(-30deg); } 50% { transform: rotate(0deg); } 100% { transform: rotate(-30deg); } }
+        .anim-switch { animation: switchClose 2s infinite ease-in-out; transform-origin: 30px 45px; }
+
+        @keyframes needleSwing { 0% { transform: rotate(-40deg); } 50% { transform: rotate(30deg); } 100% { transform: rotate(-40deg); } }
+        .anim-needle { animation: needleSwing 3s infinite cubic-bezier(0.4, 0, 0.2, 1); transform-origin: center bottom; }
+        
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .quiz-step { animation: fadeUp 0.6s ease-out forwards; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col m-0 p-0 overflow-hidden">
+
+    <!-- Header Global -->
+    <header id="main-header" class="hidden w-full p-4 border-b border-slate-700 bg-slate-900/90 backdrop-blur-md z-50 shrink-0">
+        <div class="max-w-7xl mx-auto flex justify-between items-center px-2">
+            <div class="flex items-center gap-3">
+                <span class="text-3xl animate-pulse text-yellow-400">⚡</span>
+                <h1 class="font-orbitron font-bold text-xl md:text-2xl text-cyan-400 tracking-wide">E-LAB <span class="text-yellow-400">PRO</span></h1>
+            </div>
+            <div class="text-right bg-slate-800 px-4 py-1.5 rounded-lg border border-slate-700 shadow-inner">
+                <p class="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest mb-0.5">ID Agen Ilmiah</p>
+                <p class="text-sm md:text-base font-bold text-white leading-none"><span id="display-name" class="text-cyan-300"></span> | <span id="display-class"></span></p>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full h-full relative overflow-hidden flex flex-col">
+
+        <!-- ================= HALAMAN 1: LOGIN ================= -->
+        <section id="page-login" class="page active flex-col items-center justify-center h-full w-full">
+            <div class="text-center mb-10">
+                <div class="text-6xl mb-4 animate-pulse">⚡</div>
+                <h1 class="font-orbitron text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600 neon-text-blue mb-2">VOLT QUEST</h1>
+                <p class="text-slate-400 text-lg md:text-xl font-bold tracking-widest uppercase mt-4">Misi Penyelamatan Kota</p>
+            </div>
+
+            <div class="neon-box-blue bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl w-11/12 max-w-md shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-600"></div>
+                <h2 class="font-orbitron text-xl text-center text-white mb-6 border-b border-slate-700 pb-4">AKSES SISTEM LAB</h2>
+                
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold text-cyan-400 mb-2 uppercase tracking-wider">Nama Agen Fisika</label>
+                        <input type="text" id="input-name" placeholder="Masukkan nama..." class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-cyan-400 mb-2 uppercase tracking-wider">Divisi / Kelas</label>
+                        <input type="text" id="input-class" placeholder="Contoh: 6A" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all">
+                    </div>
+                    
+                    <button onclick="login()" class="w-full mt-8 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-orbitron font-bold text-lg py-3 rounded-lg shadow-[0_0_15px_rgba(14,165,233,0.4)] hover:shadow-[0_0_25px_rgba(14,165,233,0.7)] transition-all transform hover:-translate-y-1">
+                        INISIALISASI MISI ➔
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 1.5: MENU UTAMA ================= -->
+        <section id="page-menu" class="page flex-col items-center justify-center h-full w-full px-4 overflow-y-auto py-8">
+            <div class="text-center mb-10 w-full">
+                <h2 class="font-orbitron text-3xl md:text-5xl font-bold text-cyan-400 neon-text-blue mb-3">MARKAS UTAMA</h2>
+                <p class="text-slate-400 text-sm md:text-base font-bold tracking-widest uppercase">Pilih Akses Menu, Agen</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6 w-full max-w-4xl mx-auto">
+                <!-- Opsi Kiri: Materi -->
+                <button onclick="navigate('page-materi-menu')" class="flex-1 group bg-slate-800/80 backdrop-blur-md border-2 border-slate-600 hover:border-emerald-400 rounded-3xl p-8 flex flex-col items-center text-center transition-all hover:scale-105 shadow-xl hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]">
+                    <div class="w-24 h-24 mb-6 rounded-full bg-emerald-900/30 flex items-center justify-center border border-emerald-500/50 group-hover:bg-emerald-500/20 transition-colors">
+                        <span class="text-5xl group-hover:scale-110 transition-transform">📘</span>
+                    </div>
+                    <h3 class="font-orbitron text-2xl md:text-3xl text-emerald-400 font-bold mb-3 tracking-wide">MATERI</h3>
+                    <p class="text-slate-400 text-sm md:text-base leading-relaxed">Pelajari konsep dasar, rumus, dan sifat-sifat dari rangkaian listrik seri maupun paralel.</p>
+                </button>
+
+                <!-- Opsi Kanan: Laboratorium (Via Pengarahan Misi) -->
+                <button onclick="navigate('page-problem')" class="flex-1 group bg-slate-800/80 backdrop-blur-md border-2 border-slate-600 hover:border-cyan-400 rounded-3xl p-8 flex flex-col items-center text-center transition-all hover:scale-105 shadow-xl hover:shadow-[0_0_30px_rgba(14,165,233,0.5)]">
+                    <div class="w-24 h-24 mb-6 rounded-full bg-cyan-900/30 flex items-center justify-center border border-cyan-500/50 group-hover:bg-cyan-500/20 transition-colors">
+                        <span class="text-5xl group-hover:scale-110 transition-transform">⚡</span>
+                    </div>
+                    <h3 class="font-orbitron text-2xl md:text-3xl text-cyan-400 font-bold mb-3 tracking-wide">LABORATORIUM</h3>
+                    <p class="text-slate-400 text-sm md:text-base leading-relaxed">Masuk ke ruang simulasi interaktif untuk menyusun komponen listrik dan memecahkan misi darurat kota.</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 1.6: MENU MATERI (SERI & PARALEL) ================= -->
+        <section id="page-materi-menu" class="page flex-col items-center justify-center h-full w-full px-4 overflow-y-auto py-8">
+            <div class="w-full flex justify-start mb-6 max-w-4xl mx-auto">
+                <button onclick="navigate('page-menu')" class="bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition border border-slate-600 shadow-md">
+                    <span>←</span> Menu Utama
+                </button>
+            </div>
+            <div class="text-center mb-10 w-full">
+                <h2 class="font-orbitron text-3xl md:text-4xl font-bold text-white mb-3">PILIHAN MATERI</h2>
+                <p class="text-slate-400 text-sm md:text-base font-bold tracking-widest uppercase">Pelajari Struktur Rangkaian</p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6 w-full max-w-3xl mx-auto">
+                <!-- Rangkaian Seri -->
+                <button onclick="openMateri('seri')" class="flex-1 group bg-slate-800/80 backdrop-blur-md border-2 border-slate-600 hover:border-yellow-400 rounded-3xl p-6 flex flex-col items-center text-center transition-all hover:scale-105 shadow-xl hover:shadow-[0_0_20px_rgba(234,179,8,0.4)]">
+                    <svg viewBox="0 0 100 100" class="w-32 h-32 mb-4">
+                        <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                        <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                        <path d="M 30 87 L 15 87 L 15 30 L 85 30 L 85 87 L 70 87" fill="none" stroke="#fde047" stroke-width="4"/>
+                        <circle cx="35" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                        <circle cx="65" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                    </svg>
+                    <h3 class="font-orbitron text-xl md:text-2xl text-yellow-400 font-bold tracking-wide">Rangkaian Seri</h3>
+                </button>
+
+                <!-- Rangkaian Paralel -->
+                <button onclick="openMateri('paralel')" class="flex-1 group bg-slate-800/80 backdrop-blur-md border-2 border-slate-600 hover:border-cyan-400 rounded-3xl p-6 flex flex-col items-center text-center transition-all hover:scale-105 shadow-xl hover:shadow-[0_0_20px_rgba(14,165,233,0.4)]">
+                    <svg viewBox="0 0 100 100" class="w-32 h-32 mb-4">
+                        <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                        <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                        <path d="M 30 87 L 15 87 L 15 50 M 85 87 L 85 50" fill="none" stroke="#0ea5e9" stroke-width="4"/>
+                        <path d="M 15 20 L 85 20 M 15 50 L 85 50 M 15 50 L 15 20 M 85 50 L 85 20" fill="none" stroke="#0ea5e9" stroke-width="4"/>
+                        <circle cx="50" cy="20" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                        <circle cx="50" cy="50" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                        <circle cx="15" cy="50" r="3" fill="#94a3b8"/>
+                        <circle cx="85" cy="50" r="3" fill="#94a3b8"/>
+                    </svg>
+                    <h3 class="font-orbitron text-xl md:text-2xl text-cyan-400 font-bold tracking-wide">Rangkaian Paralel</h3>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 1.7: DETAIL MATERI (INTERAKTIF) ================= -->
+        <section id="page-materi-detail" class="page flex-col items-center h-full overflow-y-auto w-full relative px-4 py-8">
+            <div class="w-full flex justify-start mb-4 max-w-4xl mx-auto">
+                <button onclick="navigate('page-materi-menu')" class="bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition border border-slate-600 shadow-md">
+                    <span>←</span> Kembali
+                </button>
+            </div>
+
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-4xl mx-auto p-6 md:p-8 flex flex-col items-center">
+                <h2 id="materi-title" class="font-orbitron text-3xl font-bold text-white mb-6 uppercase tracking-wider text-center">RANGKAIAN</h2>
+                
+                <!-- Area Gambar yang Bisa Diklik -->
+                <div onclick="revealMateriText()" class="cursor-pointer relative w-full max-w-md mx-auto aspect-video bg-slate-900 border-2 border-slate-600 hover:border-emerald-400 rounded-xl overflow-hidden mb-8 shadow-[0_0_20px_rgba(0,0,0,0.5)] group transition-all">
+                    
+                    <!-- Gambar Seri -->
+                    <div id="materi-svg-seri" class="w-full h-full p-6 hidden">
+                        <svg viewBox="0 0 100 100" class="w-full h-full opacity-90 group-hover:opacity-100 transition-opacity">
+                            <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                            <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                            <path d="M 30 87 L 15 87 L 15 30 L 85 30 L 85 87 L 70 87" fill="none" stroke="#fde047" stroke-width="4"/>
+                            <circle cx="35" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2" class="bulb-glow"/>
+                            <circle cx="65" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2" class="bulb-glow"/>
+                        </svg>
+                    </div>
+
+                    <!-- Gambar Paralel -->
+                    <div id="materi-svg-paralel" class="w-full h-full p-6 hidden">
+                        <svg viewBox="0 0 100 100" class="w-full h-full opacity-90 group-hover:opacity-100 transition-opacity">
+                            <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                            <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                            <path d="M 30 87 L 15 87 L 15 50 M 85 87 L 85 50" fill="none" stroke="#0ea5e9" stroke-width="4"/>
+                            <path d="M 15 20 L 85 20 M 15 50 L 85 50 M 15 50 L 15 20 M 85 50 L 85 20" fill="none" stroke="#0ea5e9" stroke-width="4"/>
+                            <circle cx="50" cy="20" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2" class="bulb-glow"/>
+                            <circle cx="50" cy="50" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2" class="bulb-glow"/>
+                            <circle cx="15" cy="50" r="3" fill="#94a3b8"/>
+                            <circle cx="85" cy="50" r="3" fill="#94a3b8"/>
+                        </svg>
+                    </div>
+
+                    <!-- Hint Overlay -->
+                    <div id="materi-hint" class="absolute inset-0 bg-slate-900/70 flex items-center justify-center group-hover:bg-slate-900/40 transition-colors">
+                        <p class="text-white font-bold tracking-widest bg-emerald-600/90 px-4 py-2 rounded-lg border border-emerald-400 group-hover:scale-110 transition-transform shadow-lg animate-pulse">⚡ KLIK GAMBAR INI ⚡</p>
+                    </div>
+                </div>
+
+                <!-- Konten Teks Materi (Tersembunyi Awalnya) -->
+                <div id="materi-text" class="w-full max-w-2xl mx-auto hidden opacity-0 text-left transition-opacity duration-500">
+                    <div id="materi-desc" class="bg-slate-900/60 p-6 md:p-8 rounded-xl border border-slate-700 shadow-inner">
+                        <!-- Disisipkan via JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= HALAMAN 2: VIDEO/PERMASALAHAN ================= -->
+        <section id="page-problem" class="page flex-col items-center justify-start h-full overflow-y-auto py-8 w-full max-w-4xl mx-auto px-4">
+            <div class="flex items-center gap-3 mb-6 w-full">
+                <div class="w-12 h-12 rounded-full bg-red-500/20 border border-red-500 flex items-center justify-center animate-pulse shrink-0">
+                    <span class="text-2xl">🚨</span>
+                </div>
+                <h2 class="font-orbitron text-2xl md:text-3xl font-bold text-red-400">PANGGILAN DARURAT!</h2>
+            </div>
+
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl w-full mb-8 p-6 md:p-8">
+                <!-- Video File (Diperkecil dan Ditengahkan) -->
+                <div class="relative w-full max-w-[400px] mx-auto aspect-video bg-slate-950 border-2 border-slate-600 rounded-xl overflow-hidden mb-8 shadow-[0_0_15px_rgba(0,0,0,0.3)] shrink-0">
+                    <video controls class="w-full h-full object-cover">
+                        <source src="videopermasalahan.mp4" type="video/mp4">
+                        Browser Anda tidak mendukung tag pemutar video.
+                    </video>
+                </div>
+
+                <!-- Instruksi Tepat di Bawah Video -->
+                <div class="w-full max-w-2xl mx-auto">
+                    <h3 class="text-xl md:text-2xl font-bold text-white mb-4 uppercase tracking-wider text-center">KOTA GELITA SEDANG PADAM</h3>
+                    <p class="text-slate-300 leading-relaxed mb-5 text-justify">
+                        Tadi malam, sebuah badai petir dahsyat telah melanda Kota Gelita, menyebabkan kerusakan parah pada gardu induk dan memutus seluruh pasokan listrik. Kegelapan menyelimuti kota, dan kepanikan mulai terjadi. Di tengah krisis ini, Bapak Walikota secara khusus memanggilmu, seorang Agen Ahli Kelistrikan, untuk menjalankan misi darurat. Tugasmu adalah merancang dan memulihkan kembali sistem kelistrikan pada dua fasilitas paling vital di kota ini: <b>rumah sakit</b> dan <b>lampu jalan tol</b>.
+                    </p>
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-700 mb-6 shadow-inner">
+                        <p class="text-slate-300 text-sm mb-3 font-bold">Setiap area memiliki kebutuhan spesifik agar dapat beroperasi dengan aman:</p>
+                        <ul class="list-disc list-inside text-slate-400 space-y-3">
+                            <li><b>Lampu jalan tol:</b> Ada ratusan tiang lampu. Semuanya harus bisa dimatikan atau dinyalakan secara bersamaan menggunakan satu sakelar utama untuk menghemat waktu PLN.</li>
+                            <li><b>Rumah sakit:</b> Keamanan pasien adalah yang utama. Semua ruangan harus menyala. Sangat penting jika ada satu lampu yang rusak, lampu di ruangan lain tidak boleh mati.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-blue-900/30 border border-blue-800/50 p-4 rounded-xl text-center">
+                        <p class="text-cyan-300 text-sm font-bold tracking-wide uppercase">
+                            Masuk ke simulasi dan pelajari sistem rangkaian listrik!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end w-full pb-8">
+                <button onclick="navigate('page-lab')" class="bg-cyan-600 hover:bg-cyan-500 text-white px-8 py-4 rounded-xl font-bold font-orbitron flex items-center gap-2 shadow-[0_0_15px_rgba(14,165,233,0.5)] transition-all hover:scale-105">
+                    MASUK SIMULATOR LAB <span>➔</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 3: LABORATORIUM INTERAKTIF ================= -->
+        <section id="page-lab" class="page flex-col h-full w-full relative">
+            <button onclick="navigate('page-problem')" class="absolute top-4 left-[96px] md:left-[110px] bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition border border-slate-600 shadow-lg z-30 pointer-events-auto">
+                <span>←</span> <span class="hidden md:inline">Instruksi</span>
+            </button>
+            <div class="absolute top-4 right-4 flex flex-col md:flex-row items-end md:items-start gap-3 z-30 pointer-events-none">
+                <div class="bg-slate-900/90 backdrop-blur rounded-lg border border-slate-700 p-3 flex flex-col gap-2 min-w-[180px] shadow-lg pointer-events-auto">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status Rangkaian</div>
+                    <div id="status-indicator" class="flex items-center gap-2">
+                        <div id="status-dot" class="w-3 h-3 rounded-full bg-slate-500"></div>
+                        <span id="status-text" class="text-sm font-bold text-slate-300">Menunggu Baterai</span>
+                    </div>
+                </div>
+                <button onclick="navigate('page-mission')" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 px-4 md:px-6 py-2 md:py-3 rounded-lg font-bold font-orbitron shadow-[0_0_15px_rgba(234,179,8,0.3)] transition-all hover:scale-105 flex items-center gap-2 pointer-events-auto">
+                    <span class="hidden md:inline">Pecahkan Misi</span><span class="md:hidden">Misi</span> <span>➔</span>
+                </button>
+            </div>
+            <button id="btn-toggle-vm" onclick="toggleVoltmeter(event)" class="absolute right-0 top-1/2 -translate-y-1/2 bg-yellow-500 text-yellow-900 p-2 pl-3 rounded-l-xl shadow-lg z-50 flex flex-col items-center gap-1 border-y border-l border-yellow-600 hover:bg-yellow-400 transition-colors pointer-events-auto cursor-pointer touch-none">
+                <span class="text-2xl">🎛️</span>
+                <span class="text-[9px] font-extrabold tracking-wider uppercase">Voltmeter</span>
+            </button>
+
+            <div class="flex flex-1 relative overflow-hidden bg-slate-950 border-y border-slate-700">
+                <aside id="sidebar-menu" class="w-[80px] md:w-[90px] bg-slate-900 border-r border-slate-700 z-20 flex flex-col shrink-0 overflow-y-auto transition-all duration-300 shadow-[2px_0_10px_rgba(0,0,0,0.5)]">
+                    <button onclick="setTool('pan')" id="btn-pan" class="tool-btn flex flex-col items-center justify-center py-4 w-full cursor-pointer text-slate-400"><span class="text-2xl md:text-3xl mb-1 pointer-events-none">✋</span><span class="text-[10px] md:text-[11px] font-bold pointer-events-none">Geser</span></button>
+                    <button onclick="setTool('wire')" id="btn-wire" class="tool-btn tool-active flex flex-col items-center justify-center py-4 w-full cursor-pointer text-slate-400"><span class="text-2xl md:text-3xl mb-1 pointer-events-none text-cyan-400">〰️</span><span class="text-[10px] md:text-[11px] font-bold pointer-events-none text-cyan-100">Kabel</span></button>
+                    <button onclick="setTool('battery')" id="btn-battery" class="tool-btn flex flex-col items-center justify-center py-4 w-full cursor-pointer text-slate-400"><span class="text-2xl md:text-3xl mb-1 pointer-events-none">🔋</span><span class="text-[10px] md:text-[11px] font-bold pointer-events-none">Baterai</span></button>
+                    <button onclick="setTool('bulb')" id="btn-bulb" class="tool-btn flex flex-col items-center justify-center py-4 w-full cursor-pointer text-slate-400"><span class="text-2xl md:text-3xl mb-1 pointer-events-none">💡</span><span class="text-[10px] md:text-[11px] font-bold pointer-events-none">Lampu</span></button>
+                    <button onclick="setTool('switch')" id="btn-switch" class="tool-btn flex flex-col items-center justify-center py-4 w-full cursor-pointer text-slate-400"><span class="text-2xl md:text-3xl mb-1 pointer-events-none">🎚️</span><span class="text-[10px] md:text-[11px] font-bold pointer-events-none">Sakelar</span></button>
+                    <button onclick="setTool('erase')" id="btn-erase" class="tool-btn flex flex-col items-center justify-center py-4 w-full cursor-pointer text-slate-400 hover:bg-red-900/30 hover:border-red-500"><span class="text-2xl md:text-3xl mb-1 pointer-events-none">🧽</span><span class="text-[10px] md:text-[11px] font-bold pointer-events-none">Hapus</span></button>
+                </aside>
+
+                <section class="flex-1 relative overflow-auto cursor-crosshair bg-slate-900" id="workspace-container">
+                    <div id="grid-container" class="relative workspace-bg overflow-hidden shadow-inner" style="width: 1800px; height: 1200px; min-width: 1800px;">
+                        <svg id="svg-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10" xmlns="http://www.w3.org/2000/svg"></svg>
+                        <div id="hover-highlight" class="absolute hidden pointer-events-none border-2 border-cyan-400/80 bg-cyan-400/10 rounded-md z-15" style="width: 60px; height: 60px;"></div>
+                        <div id="anchor-highlight" class="absolute hidden pointer-events-none border-4 border-yellow-400 bg-yellow-400/20 rounded-md z-15 animate-pulse" style="width: 60px; height: 60px;"></div>
+                        <div id="interaction-layer" class="absolute top-0 left-0 w-full h-full z-20 touch-none"></div>
+
+                        <div id="voltmeter-layer" class="absolute inset-0 pointer-events-none z-40 hidden">
+                            <svg class="absolute inset-0 w-full h-full pointer-events-none">
+                                <path id="vm-cable-red" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round" />
+                                <path id="vm-cable-black" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round" />
+                            </svg>
+                            <div id="vm-body" class="absolute w-36 bg-yellow-500 rounded-xl border-4 border-yellow-600 shadow-[0_10px_30px_rgba(0,0,0,0.5)] pointer-events-auto cursor-grab flex flex-col items-center p-2 transform -translate-x-1/2 -translate-y-1/2 touch-none">
+                                <div class="bg-slate-950 w-full h-12 rounded-md mb-2 border-4 border-slate-700 flex items-center justify-end px-2 shadow-inner"><span id="vm-display" class="font-digital text-2xl font-bold text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)] tracking-wider">0.00 V</span></div>
+                                <div class="flex gap-4 w-full justify-center mt-0.5"><div class="w-3 h-3 rounded-full bg-slate-900 border-2 border-slate-600 shadow-inner"></div><div class="w-3 h-3 rounded-full bg-red-600 border-2 border-red-800 shadow-inner"></div></div>
+                                <div class="text-[9px] font-extrabold text-yellow-900 mt-1 uppercase tracking-widest">Multimeter</div>
+                            </div>
+                            <div id="vm-probe-black" class="absolute pointer-events-auto cursor-grab transform -translate-x-1/2 touch-none" style="width: 12px; height: 50px;"><div class="w-1.5 h-4 bg-slate-300 mx-auto rounded-t-sm"></div><div class="w-3 h-10 bg-slate-800 mx-auto rounded-b-md shadow-md border border-slate-900"></div></div>
+                            <div id="vm-probe-red" class="absolute pointer-events-auto cursor-grab transform -translate-x-1/2 touch-none" style="width: 12px; height: 50px;"><div class="w-1.5 h-4 bg-slate-300 mx-auto rounded-t-sm"></div><div class="w-3 h-10 bg-red-600 mx-auto rounded-b-md shadow-md border border-red-700"></div></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer class="h-16 md:h-20 bg-slate-900 border-t border-slate-700 flex items-center justify-between px-4 md:px-6 z-30 shrink-0">
+                <div class="text-[10px] md:text-xs leading-tight flex-1" id="footer-instructions">
+                    <span class="font-bold text-yellow-400">Cara Penggunaan:</span> 
+                    <span class="text-slate-300 ml-1">Pilih alat di kiri, ketuk kanvas. Untuk menutup sambungan kabel yang terputus, ketuk lagi ujung kabel tersebut.</span>
+                </div>
+                <div class="flex items-center ml-4 shrink-0">
+                    <button onclick="resetBoard()" class="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 px-4 py-2 rounded-lg text-sm font-bold transition border border-red-500/50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span class="hidden md:inline">Reset Lab</span>
+                        <span class="md:hidden">Reset</span>
+                    </button>
+                </div>
+            </footer>
+        </section>
+
+        <!-- ================= HALAMAN 4: MISI / TANTANGAN ================= -->
+        <section id="page-mission" class="page flex-col items-center py-8 h-full overflow-y-auto px-4">
+            <div class="text-center mb-8">
+                <h2 class="font-orbitron text-3xl font-bold text-cyan-400 neon-text-blue">MISI PENYELAMATAN KOTA</h2>
+                <p class="text-slate-400 mt-2">Berdasarkan hasil uji cobamu di Laboratorium, pilih solusi yang tepat!</p>
+            </div>
+
+            <div class="w-full max-w-3xl space-y-6">
+                <!-- Soal Misi 1 -->
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 relative overflow-hidden shadow-lg">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-red-500"></div>
+                    <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">🏥 Kasus 1: Rumah Sakit</h3>
+                    <p class="text-slate-300 mb-4 text-sm">Jika satu lampu di ruang operasi putus, lampu di ruang IGD tidak boleh ikut padam. Rangkaian apa yang harus dibangun oleh teknisi gedung?</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="m1" value="seri" class="peer sr-only">
+                            <div class="p-4 rounded-xl border-2 border-slate-600 bg-slate-900 text-center peer-checked:border-red-500 peer-checked:bg-red-500/10 transition-all hover:border-slate-500 flex flex-col items-center">
+                                <svg viewBox="0 0 100 100" class="w-full h-24 mb-3 opacity-60 group-hover:opacity-100 peer-checked:opacity-100 transition-opacity">
+                                    <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                                    <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                                    <path d="M 30 87 L 15 87 L 15 30 L 85 30 L 85 87 L 70 87" fill="none" stroke="#475569" stroke-width="4"/>
+                                    <circle cx="35" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                    <circle cx="65" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                </svg>
+                                <span class="font-bold text-slate-400 peer-checked:text-white">Skema Seri</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="m1" value="paralel" class="peer sr-only">
+                            <div class="p-4 rounded-xl border-2 border-slate-600 bg-slate-900 text-center peer-checked:border-cyan-400 peer-checked:bg-cyan-500/10 transition-all hover:border-slate-500 flex flex-col items-center">
+                                <svg viewBox="0 0 100 100" class="w-full h-24 mb-3 opacity-60 group-hover:opacity-100 peer-checked:opacity-100 transition-opacity">
+                                    <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                                    <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                                    <path d="M 30 87 L 15 87 L 15 50 M 85 87 L 85 50" fill="none" stroke="#475569" stroke-width="4"/>
+                                    <path d="M 15 20 L 85 20 M 15 50 L 85 50 M 15 50 L 15 20 M 85 50 L 85 20" fill="none" stroke="#475569" stroke-width="4"/>
+                                    <circle cx="50" cy="20" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                    <circle cx="50" cy="50" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                    <circle cx="15" cy="50" r="3" fill="#94a3b8"/>
+                                    <circle cx="85" cy="50" r="3" fill="#94a3b8"/>
+                                </svg>
+                                <span class="font-bold text-slate-400 peer-checked:text-white">Skema Paralel</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Soal Misi 2 -->
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 relative overflow-hidden shadow-lg">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-yellow-500"></div>
+                    <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">🛣️ Kasus 2: Lampu Jalan Tol</h3>
+                    <p class="text-slate-300 mb-4 text-sm">Untuk menghemat waktu, PLN ingin mematikan seluruh lampu jalan tol secara serentak cukup dengan <b>SATU sakelar utama</b>. Rangkaian apa yang diterapkan pada sakelar ini terhadap lampu-lampu jalan?</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="m2" value="seri" class="peer sr-only">
+                            <div class="p-4 rounded-xl border-2 border-slate-600 bg-slate-900 text-center peer-checked:border-cyan-400 peer-checked:bg-cyan-500/10 transition-all hover:border-slate-500 flex flex-col items-center">
+                                <svg viewBox="0 0 100 100" class="w-full h-24 mb-3 opacity-60 group-hover:opacity-100 peer-checked:opacity-100 transition-opacity">
+                                    <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                                    <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                                    <path d="M 30 87 L 15 87 L 15 30 L 85 30 L 85 87 L 70 87" fill="none" stroke="#475569" stroke-width="4"/>
+                                    <circle cx="35" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                    <circle cx="65" cy="30" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                </svg>
+                                <span class="font-bold text-slate-400 peer-checked:text-white">Skema Seri</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group">
+                            <input type="radio" name="m2" value="paralel" class="peer sr-only">
+                            <div class="p-4 rounded-xl border-2 border-slate-600 bg-slate-900 text-center peer-checked:border-red-500 peer-checked:bg-red-500/10 transition-all hover:border-slate-500 flex flex-col items-center">
+                                <svg viewBox="0 0 100 100" class="w-full h-24 mb-3 opacity-60 group-hover:opacity-100 peer-checked:opacity-100 transition-opacity">
+                                    <rect x="30" y="80" width="40" height="15" fill="#1e293b" rx="2"/>
+                                    <rect x="50" y="80" width="20" height="15" fill="#ef4444" rx="2"/>
+                                    <path d="M 30 87 L 15 87 L 15 50 M 85 87 L 85 50" fill="none" stroke="#475569" stroke-width="4"/>
+                                    <path d="M 15 20 L 85 20 M 15 50 L 85 50 M 15 50 L 15 20 M 85 50 L 85 20" fill="none" stroke="#475569" stroke-width="4"/>
+                                    <circle cx="50" cy="20" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                    <circle cx="50" cy="50" r="10" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+                                    <circle cx="15" cy="50" r="3" fill="#94a3b8"/>
+                                    <circle cx="85" cy="50" r="3" fill="#94a3b8"/>
+                                </svg>
+                                <span class="font-bold text-slate-400 peer-checked:text-white">Skema Paralel</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mt-6 pb-10">
+                    <button onclick="navigate('page-lab')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 px-6 rounded-xl transition-all">Kembali Uji Coba</button>
+                    <button onclick="checkMission()" class="flex-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-orbitron font-bold text-xl py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all hover:scale-[1.02]">KIRIMKAN SOLUSI</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HALAMAN 5: EVALUASI KUIS (PAGES) ================= -->
+        <section id="page-quiz" class="page flex-col items-center h-full overflow-hidden w-full relative">
+            
+            <!-- Global Header untuk Evaluasi -->
+            <div class="w-full bg-slate-900 border-b border-slate-700 p-4 shrink-0 shadow-lg z-20">
+                <div class="max-w-4xl mx-auto flex items-center justify-between">
+                    <h2 class="font-orbitron font-bold text-xl text-yellow-400">EVALUASI AKHIR</h2>
+                    <div class="text-sm font-bold text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">Soal <span id="quiz-current-text" class="text-cyan-400">1</span> / 5</div>
+                </div>
+                <!-- Progress Bar -->
+                <div class="max-w-4xl mx-auto h-1.5 bg-slate-800 rounded-full mt-3 overflow-hidden">
+                    <div id="quiz-progress" class="h-full bg-cyan-500 transition-all duration-500 w-1/5 shadow-[0_0_8px_#0ea5e9]"></div>
+                </div>
+            </div>
+
+            <!-- Area Pertanyaan (Halaman Terpisah) -->
+            <div class="w-full flex-1 relative bg-slate-950 overflow-y-auto">
+                
+                <!-- Kuis 1 -->
+                <div id="quiz-q0" class="quiz-step flex flex-col items-center justify-center min-h-full p-4 md:p-8">
+                    <div class="bg-slate-800 w-full max-w-3xl rounded-2xl border border-slate-700 shadow-2xl p-6 md:p-8 flex flex-col items-center">
+                        <div class="w-32 h-32 mb-6 spark-anim relative flex items-center justify-center">
+                            <!-- Animasi Konsleting -->
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <rect x="25" y="60" width="50" height="30" fill="#1e293b" rx="5"/>
+                                <rect x="50" y="60" width="25" height="30" fill="#ef4444" rx="5"/>
+                                <path d="M 25 75 C 5 75, 5 20, 50 20 C 95 20, 95 75, 75 75" fill="none" stroke="#0ea5e9" stroke-width="5" class="electron-line"/>
+                                <circle cx="50" cy="20" r="10" fill="#ef4444" />
+                                <circle cx="50" cy="20" r="15" fill="#ef4444" opacity="0.6"/>
+                                <circle cx="50" cy="20" r="20" fill="#ef4444" opacity="0.3"/>
+                            </svg>
+                        </div>
+                        <p class="text-white text-lg md:text-xl font-bold text-center mb-8">1. Apa yang terjadi jika rangkaian listrik tidak memiliki beban (lampu/alat) untuk menerima energi listrik?</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-8">
+                            <button id="btn-0-A" class="btn-quiz-0 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(0, 'A')">A. Rangkaian akan tetap menyala</button>
+                            <button id="btn-0-B" class="btn-quiz-0 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(0, 'B')">B. Akan terjadi konsleting</button>
+                            <button id="btn-0-C" class="btn-quiz-0 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(0, 'C')">C. Akan terjadi kelebihan beban</button>
+                            <button id="btn-0-D" class="btn-quiz-0 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(0, 'D')">D. Akan bekerja dengan baik</button>
+                        </div>
+                        <button id="btn-next-0" onclick="nextQuizPage(0)" class="hidden w-full max-w-md mx-auto bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold font-orbitron py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]">Selanjutnya ➔</button>
+                    </div>
+                </div>
+
+                <!-- Kuis 2 -->
+                <div id="quiz-q1" class="quiz-step hidden flex-col items-center justify-center min-h-full p-4 md:p-8">
+                    <div class="bg-slate-800 w-full max-w-3xl rounded-2xl border border-slate-700 shadow-2xl p-6 md:p-8 flex flex-col items-center">
+                        <div class="w-40 h-32 mb-6 relative flex items-center justify-center">
+                            <!-- Animasi Sakelar Menutup -> Lampu Nyala -->
+                            <svg viewBox="0 0 150 100" class="w-full h-full">
+                                <path d="M 20 80 L 20 20 L 60 20" fill="none" stroke="#0ea5e9" stroke-width="4"/>
+                                <path d="M 90 20 L 130 20 L 130 80" fill="none" stroke="#0ea5e9" stroke-width="4"/>
+                                <line x1="60" y1="20" x2="90" y2="20" stroke="#0ea5e9" stroke-width="4" stroke-linecap="round" class="anim-switch"/>
+                                <circle cx="60" cy="20" r="4" fill="#cbd5e1"/>
+                                <circle cx="90" cy="20" r="4" fill="#cbd5e1"/>
+                                
+                                <rect x="10" y="80" width="30" height="15" fill="#1e293b"/>
+                                <circle cx="130" cy="80" r="12" fill="#fde047" class="bulb-glow" stroke="#ca8a04" stroke-width="2"/>
+                                <path d="M 120 92 L 140 92 L 135 100 L 125 100 Z" fill="#64748b"/>
+                            </svg>
+                        </div>
+                        <p class="text-white text-lg md:text-xl font-bold text-center mb-8">2. Agar rangkaian listrik dapat bekerja dengan baik, maka rangkaian harus...</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-8">
+                            <button id="btn-1-A" class="btn-quiz-1 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(1, 'A')">A. Terputus</button>
+                            <button id="btn-1-B" class="btn-quiz-1 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(1, 'B')">B. Tidak lengkap</button>
+                            <button id="btn-1-C" class="btn-quiz-1 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(1, 'C')">C. Tersusun rapi tetapi tidak terhubung</button>
+                            <button id="btn-1-D" class="btn-quiz-1 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(1, 'D')">D. Terhubung dengan lengkap dan tidak terputus</button>
+                        </div>
+                        <button id="btn-next-1" onclick="nextQuizPage(1)" class="hidden w-full max-w-md mx-auto bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold font-orbitron py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]">Selanjutnya ➔</button>
+                    </div>
+                </div>
+
+                <!-- Kuis 3 -->
+                <div id="quiz-q2" class="quiz-step hidden flex-col items-center justify-center min-h-full p-4 md:p-8">
+                    <div class="bg-slate-800 w-full max-w-3xl rounded-2xl border border-slate-700 shadow-2xl p-6 md:p-8 flex flex-col items-center">
+                        <div class="flex gap-4 mb-6">
+                            <div class="bg-slate-900 p-3 rounded-lg border border-slate-600 flex flex-col items-center"><span class="text-3xl">🔋</span><span class="text-[10px] text-cyan-400 mt-1">(1) Baterai</span></div>
+                            <div class="bg-slate-900 p-3 rounded-lg border border-slate-600 flex flex-col items-center"><span class="text-3xl text-cyan-400">〰️</span><span class="text-[10px] text-cyan-400 mt-1">(2) Kabel</span></div>
+                            <div class="bg-slate-900 p-3 rounded-lg border border-slate-600 flex flex-col items-center"><span class="text-3xl">💡</span><span class="text-[10px] text-cyan-400 mt-1">(3) Lampu</span></div>
+                            <div class="bg-slate-900 p-3 rounded-lg border border-red-900 flex flex-col items-center opacity-50"><span class="text-3xl">📘</span><span class="text-[10px] text-red-400 mt-1">(4) Buku</span></div>
+                        </div>
+                        <p class="text-white text-lg md:text-xl font-bold text-center mb-8">3. Perhatikan komponen di atas! Komponen yang termasuk penyusun utama rangkaian listrik adalah...</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-8">
+                            <button id="btn-2-A" class="btn-quiz-2 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(2, 'A')">A. (1), (2), dan (3)</button>
+                            <button id="btn-2-B" class="btn-quiz-2 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(2, 'B')">B. (1), (2), dan (4)</button>
+                            <button id="btn-2-C" class="btn-quiz-2 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(2, 'C')">C. (2), (3), dan (4)</button>
+                            <button id="btn-2-D" class="btn-quiz-2 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(2, 'D')">D. (1), (3), dan (4)</button>
+                        </div>
+                        <button id="btn-next-2" onclick="nextQuizPage(2)" class="hidden w-full max-w-md mx-auto bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold font-orbitron py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]">Selanjutnya ➔</button>
+                    </div>
+                </div>
+
+                <!-- Kuis 4 -->
+                <div id="quiz-q3" class="quiz-step hidden flex-col items-center justify-center min-h-full p-4 md:p-8">
+                    <div class="bg-slate-800 w-full max-w-3xl rounded-2xl border border-slate-700 shadow-2xl p-6 md:p-8 flex flex-col items-center">
+                        <div class="w-48 h-24 mb-6 relative flex items-center justify-center">
+                            <!-- Animasi Seri Mati 1 Mati Semua -->
+                            <svg viewBox="0 0 200 100" class="w-full h-full opacity-80">
+                                <path d="M 20 80 L 20 20 L 80 20 M 120 20 L 180 20 L 180 80 M 50 80 L 150 80" fill="none" stroke="#475569" stroke-width="4"/>
+                                <rect x="10" y="80" width="40" height="15" fill="#1e293b"/>
+                                <circle cx="100" cy="20" r="12" fill="#1e293b" stroke="#ef4444" stroke-width="3"/> <!-- Lampu Putus -->
+                                <line x1="92" y1="12" x2="108" y2="28" stroke="#ef4444" stroke-width="3"/>
+                                <line x1="108" y1="12" x2="92" y2="28" stroke="#ef4444" stroke-width="3"/>
+                                
+                                <circle cx="180" cy="80" r="12" fill="#1e293b" stroke="#475569" stroke-width="2"/> <!-- Lampu Gelap -->
+                            </svg>
+                        </div>
+                        <p class="text-white text-lg md:text-xl font-bold text-center mb-8">4. Rangkaian listrik yang memiliki satu jalur arus listrik dan jika satu lampu mati maka semua lampu mati disebut...</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-8">
+                            <button id="btn-3-A" class="btn-quiz-3 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(3, 'A')">A. Rangkaian paralel</button>
+                            <button id="btn-3-B" class="btn-quiz-3 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(3, 'B')">B. Rangkaian campuran</button>
+                            <button id="btn-3-C" class="btn-quiz-3 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(3, 'C')">C. Rangkaian seri</button>
+                            <button id="btn-3-D" class="btn-quiz-3 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(3, 'D')">D. Rangkaian terbuka</button>
+                        </div>
+                        <button id="btn-next-3" onclick="nextQuizPage(3)" class="hidden w-full max-w-md mx-auto bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold font-orbitron py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]">Selanjutnya ➔</button>
+                    </div>
+                </div>
+
+                <!-- Kuis 5 -->
+                <div id="quiz-q4" class="quiz-step hidden flex-col items-center justify-center min-h-full p-4 md:p-8">
+                    <div class="bg-slate-800 w-full max-w-3xl rounded-2xl border border-slate-700 shadow-2xl p-6 md:p-8 flex flex-col items-center">
+                        <div class="w-32 h-32 mb-6 relative flex items-center justify-center">
+                            <!-- Animasi Voltmeter Mengukur -->
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <rect x="10" y="20" width="80" height="60" fill="#eab308" rx="8" stroke="#ca8a04" stroke-width="4"/>
+                                <rect x="20" y="30" width="60" height="25" fill="#0f172a" rx="4"/>
+                                <path d="M 25 50 C 40 30, 60 30, 75 50" fill="none" stroke="#334155" stroke-width="2"/>
+                                <line x1="50" y1="52" x2="50" y2="35" stroke="#ef4444" stroke-width="2" class="anim-needle"/>
+                                <circle cx="50" cy="52" r="3" fill="#1e293b"/>
+                                <text x="50" y="70" fill="#1e293b" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">VOLT</text>
+                                <circle cx="30" cy="70" r="4" fill="#1e293b"/>
+                                <circle cx="70" cy="70" r="4" fill="#ef4444"/>
+                            </svg>
+                        </div>
+                        <p class="text-white text-lg md:text-xl font-bold text-center mb-8">5. Voltmeter digunakan untuk...</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-8">
+                            <button id="btn-4-A" class="btn-quiz-4 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(4, 'A')">A. Mengukur kuat arus listrik</button>
+                            <button id="btn-4-B" class="btn-quiz-4 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(4, 'B')">B. Mengukur suhu</button>
+                            <button id="btn-4-C" class="btn-quiz-4 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(4, 'C')">C. Mengukur tegangan listrik dalam rangkaian</button>
+                            <button id="btn-4-D" class="btn-quiz-4 bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition" onclick="selectAnswer(4, 'D')">D. Menghubungkan rangkaian listrik</button>
+                        </div>
+                        <button id="btn-next-4" onclick="nextQuizPage(4)" class="hidden w-full max-w-md mx-auto bg-emerald-500 hover:bg-emerald-400 text-white font-bold font-orbitron py-3 px-6 rounded-xl transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)]">Selesai & Lihat Skor ➔</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL PENJELASAN SIMULATOR -->
+    <div id="explanation-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-slate-800 rounded-2xl shadow-2xl border border-slate-600 w-full max-w-md p-6 transform scale-95 transition-transform duration-300" id="explanation-content">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                    <div id="modal-icon" class="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-700">💡</div>
+                    <h2 id="modal-title" class="text-xl font-extrabold text-white">Analisis Data</h2>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition-colors focus:outline-none p-1 bg-slate-700 rounded-full hover:bg-slate-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="modal-text" class="text-slate-300 text-sm leading-relaxed mb-6"></div>
+            <div class="flex justify-end border-t border-slate-700 pt-4">
+                <button onclick="closeModal()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-xl transition-all shadow-md shadow-cyan-500/30">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL HASIL MISI GAME -->
+    <div id="result-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[110] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div class="bg-slate-800 rounded-2xl border-2 border-cyan-500 p-8 w-full max-w-md text-center shadow-[0_0_50px_rgba(14,165,233,0.3)] transform scale-90 transition-transform duration-300" id="result-content">
+            <div id="result-icon" class="text-6xl mb-4">🏆</div>
+            <h2 id="result-title" class="font-orbitron text-2xl font-bold text-cyan-400 mb-2">MISI BERHASIL!</h2>
+            <p id="result-desc" class="text-slate-300 mb-6">Luar biasa! Analisamu tepat. Kota Gelita kini kembali terang benderang berkat keahlianmu.</p>
+            <div class="bg-slate-900 rounded-lg p-4 mb-6 border border-slate-700 text-left text-sm text-slate-400">
+                <p><b>Rumah Sakit (Paralel):</b> Jalur bercabang memastikan satu lampu putus tidak memengaruhi yang lain.</p>
+                <p class="mt-2"><b>Lampu Jalan (Seri):</b> Sakelar yang dipasang seri dengan jalur utama dapat memutus arus secara keseluruhan.</p>
+            </div>
+            <div id="mission-action-buttons">
+                <button onclick="startEvaluasi()" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-3 px-6 rounded-lg w-full transition-colors shadow-lg">
+                    Lanjut ke Evaluasi Akhir ➔
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SKOR KUIS AKHIR -->
+    <div id="score-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[120] hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300 p-4">
+        <div class="bg-slate-800 rounded-2xl border-2 border-yellow-500 p-8 w-full max-w-md text-center shadow-[0_0_50px_rgba(234,179,8,0.3)] transform scale-90 transition-transform duration-300" id="score-content">
+            <div class="w-24 h-24 mx-auto bg-slate-900 rounded-full border-4 border-yellow-500 flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(234,179,8,0.5)]">
+                <span id="final-score-display" class="font-orbitron text-4xl font-bold text-yellow-400">100</span>
+            </div>
+            <h2 class="font-orbitron text-2xl font-bold text-white mb-2 uppercase tracking-widest">EVALUASI SELESAI</h2>
+            <p id="score-desc" class="text-slate-300 mb-8">Kerja bagus, Agen! Kamu telah menyelesaikan seluruh misi kelistrikan.</p>
+            <button onclick="resetGameFull()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-6 rounded-lg w-full transition-colors border border-cyan-400">
+                SELESAI
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. LOGIKA GAME & NAVIGASI SPA ---
+        let studentData = { name: '', class: '' };
+
+        function navigate(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+                setTimeout(() => { if(!page.classList.contains('active')) page.style.display = 'none'; }, 300);
+            });
+
+            const targetPage = document.getElementById(pageId);
+            targetPage.style.display = 'flex';
+            setTimeout(() => { targetPage.classList.add('active'); }, 50);
+
+            const header = document.getElementById('main-header');
+            if(pageId === 'page-login') {
+                header.classList.add('hidden');
+            } else {
+                header.classList.remove('hidden');
+            }
+
+            if(pageId === 'page-lab') {
+                setTimeout(() => {
+                    const ws = document.getElementById('workspace-container');
+                    if(ws) {
+                        ws.scrollLeft = (1800 - ws.clientWidth) / 2;
+                        ws.scrollTop = (1200 - ws.clientHeight) / 2;
+                    }
+                }, 100);
+            }
+        }
+
+        function login() {
+            const nameInput = document.getElementById('input-name').value.trim();
+            const classInput = document.getElementById('input-class').value.trim();
+
+            if (!nameInput || !classInput) {
+                alert("Mohon lengkapi Nama dan Kelas untuk memulai misi!");
+                return;
+            }
+            studentData.name = nameInput;
+            studentData.class = classInput;
+            document.getElementById('display-name').innerText = studentData.name.toUpperCase();
+            document.getElementById('display-class').innerText = studentData.class.toUpperCase();
+
+            // SETELAH LOGIN -> MENU UTAMA
+            navigate('page-menu');
+        }
+
+        // --- 1.5 LOGIKA MATERI ---
+        function openMateri(type) {
+            document.getElementById('materi-text').classList.add('hidden');
+            document.getElementById('materi-text').classList.remove('quiz-step');
+            document.getElementById('materi-hint').style.display = 'flex';
+
+            if(type === 'seri') {
+                document.getElementById('materi-title').innerText = 'RANGKAIAN SERI';
+                document.getElementById('materi-title').className = 'font-orbitron text-3xl md:text-4xl font-bold text-yellow-400 mb-6 uppercase tracking-wider text-center neon-text-yellow';
+                document.getElementById('materi-svg-seri').style.display = 'block';
+                document.getElementById('materi-svg-paralel').style.display = 'none';
+                document.getElementById('materi-desc').innerHTML = `
+                    <p class="text-slate-300 leading-relaxed mb-4 text-justify">
+                        <b>Rangkaian Seri</b> adalah rangkaian listrik yang komponennya disusun secara berurutan dalam satu jalur tunggal tanpa adanya percabangan. Arus listrik mengalir tanpa henti melewati setiap komponen secara bergantian.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                        <li><b>Kelebihan:</b> Membutuhkan kabel yang lebih sedikit sehingga biaya pemasangan lebih hemat.</li>
+                        <li><b>Kekurangan:</b> Jika salah satu komponen (misal: lampu) rusak atau dicabut, maka <b>semua komponen lain akan ikut mati</b> karena jalur arus terputus total.</li>
+                        <li><b>Karakteristik:</b> Arus listrik (I) di setiap titik sama besar, namun tegangan (V) akan terbagi ke masing-masing komponen. Lampu yang dirangkai seri biasanya menyala lebih redup jika ditambah.</li>
+                    </ul>
+                    <div class="bg-yellow-900/30 border border-yellow-800 p-3 rounded-lg text-yellow-300 text-sm mt-4">
+                        <b>Contoh penerapan:</b> Lampu hias taman, lampu di dalam senter, dan sakelar utama yang dapat memutus seluruh arus kelistrikan.
+                    </div>
+                `;
+            } else {
+                document.getElementById('materi-title').innerText = 'RANGKAIAN PARALEL';
+                document.getElementById('materi-title').className = 'font-orbitron text-3xl md:text-4xl font-bold text-cyan-400 mb-6 uppercase tracking-wider text-center neon-text-blue';
+                document.getElementById('materi-svg-seri').style.display = 'none';
+                document.getElementById('materi-svg-paralel').style.display = 'block';
+                document.getElementById('materi-desc').innerHTML = `
+                    <p class="text-slate-300 leading-relaxed mb-4 text-justify">
+                        <b>Rangkaian Paralel</b> adalah rangkaian listrik yang komponennya disusun secara sejajar sehingga memiliki jalur cabang arus lebih dari satu.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                        <li><b>Kelebihan:</b> Jika salah satu komponen rusak atau diputus sakelarnya, komponen di cabang lain <b>tetap dapat menyala</b> karena memiliki jalur arus masing-masing yang mandiri.</li>
+                        <li><b>Kekurangan:</b> Membutuhkan lebih banyak kabel dan komponen penyambung sehingga biaya instalasi cenderung lebih mahal.</li>
+                        <li><b>Karakteristik:</b> Tegangan (V) di setiap cabang sama besar dengan tegangan sumber, namun arus listrik (I) akan terbagi ke setiap cabang sesuai hambatannya. Lampu menyala lebih terang merata.</li>
+                    </ul>
+                    <div class="bg-cyan-900/30 border border-cyan-800 p-3 rounded-lg text-cyan-300 text-sm mt-4">
+                        <b>Contoh penerapan:</b> Instalasi listrik di rumah/gedung, lampu lalu lintas, dan fasilitas vital yang tidak boleh mati total (seperti Rumah Sakit).
+                    </div>
+                `;
+            }
+            navigate('page-materi-detail');
+        }
+
+        function revealMateriText() {
+            document.getElementById('materi-hint').style.display = 'none';
+            const textEl = document.getElementById('materi-text');
+            textEl.classList.remove('hidden');
+            void textEl.offsetWidth; 
+            textEl.classList.add('quiz-step'); 
+            textEl.classList.remove('opacity-0');
+        }
+
+        // --- LANJUTAN LOGIKA MISI DAN LAINNYA ---
+        function checkMission() {
+            const q1 = document.querySelector('input[name="m1"]:checked');
+            const q2 = document.querySelector('input[name="m2"]:checked');
+
+            if (!q1 || !q2) {
+                alert("Harap pilih jawaban untuk kedua kasus misi!");
+                return;
+            }
+
+            const isQ1Correct = q1.value === 'paralel';
+            const isQ2Correct = q2.value === 'seri';
+
+            showResultModal(isQ1Correct && isQ2Correct);
+        }
+
+        function showResultModal(isSuccess) {
+            const modal = document.getElementById('result-modal');
+            const content = document.getElementById('result-content');
+            const title = document.getElementById('result-title');
+            const desc = document.getElementById('result-desc');
+            const icon = document.getElementById('result-icon');
+            const actionContainer = document.getElementById('mission-action-buttons');
+
+            if (isSuccess) {
+                icon.innerText = "🏆";
+                title.innerText = "MISI BERHASIL!";
+                title.className = "font-orbitron text-2xl font-bold text-cyan-400 mb-2";
+                desc.innerHTML = "Luar biasa, Agen <b>" + studentData.name + "</b>! Analisamu tepat. Kota Gelita kini kembali terang benderang berkat keahlianmu.";
+                actionContainer.innerHTML = `<button onclick="startEvaluasi()" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-3 px-6 rounded-lg w-full transition-colors shadow-lg">Lanjut ke Evaluasi Akhir ➔</button>`;
+            } else {
+                icon.innerText = "💥";
+                title.innerText = "KORSLETING!";
+                title.className = "font-orbitron text-2xl font-bold text-red-500 mb-2";
+                desc.innerText = "Ups! Pemilihan rangkaianmu belum tepat sehingga sistem gagal. Kembali ke Lab dan ingat: Rangkaian Paralel agar perangkat mandiri, Rangkaian Seri agar bisa dimatikan serentak.";
+                actionContainer.innerHTML = `<button onclick="hideResultModal()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-6 rounded-lg w-full transition-colors">Tutup dan Coba Lagi</button>`;
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-90');
+            }, 50);
+        }
+
+        function hideResultModal() {
+            const modal = document.getElementById('result-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+        }
+
+        // --- 2. LOGIKA KUIS EVALUASI (HALAMAN TERPISAH) ---
+        let currentQuizSlide = 0;
+        let quizScore = 0;
+        let userAnswers = {};
+        
+        // Kunci Jawaban
+        const correctAnswers = {
+            0: 'B',
+            1: 'D',
+            2: 'A',
+            3: 'C',
+            4: 'C'
+        };
+
+        function startEvaluasi() {
+            hideResultModal();
+            currentQuizSlide = 0;
+            userAnswers = {};
+            
+            document.getElementById('quiz-progress').style.width = `20%`;
+            document.getElementById('quiz-current-text').innerText = `1`;
+            
+            // Tampilkan hanya soal pertama
+            for(let i=0; i<5; i++) {
+                const step = document.getElementById(`quiz-q${i}`);
+                if(i === 0) {
+                    step.classList.remove('hidden');
+                    step.classList.add('flex');
+                } else {
+                    step.classList.add('hidden');
+                    step.classList.remove('flex');
+                }
+
+                // Sembunyikan tombol selanjutnya
+                document.getElementById(`btn-next-${i}`).classList.add('hidden');
+                
+                // Reset tombol pilihan
+                document.querySelectorAll(`.btn-quiz-${i}`).forEach(btn => {
+                    btn.className = `btn-quiz-${i} bg-slate-900 border-2 border-slate-600 p-4 rounded-xl text-left text-slate-300 hover:bg-slate-700 transition`;
+                });
+            }
+
+            navigate('page-quiz');
+        }
+
+        function selectAnswer(qIndex, selectedValue) {
+            userAnswers[qIndex] = selectedValue;
+
+            document.querySelectorAll(`.btn-quiz-${qIndex}`).forEach(btn => {
+                btn.classList.replace('bg-cyan-600', 'bg-slate-900');
+                btn.classList.replace('border-cyan-400', 'border-slate-600');
+                btn.classList.replace('text-white', 'text-slate-300');
+            });
+
+            const selectedBtn = document.getElementById(`btn-${qIndex}-${selectedValue}`);
+            selectedBtn.classList.replace('bg-slate-900', 'bg-cyan-600');
+            selectedBtn.classList.replace('border-slate-600', 'border-cyan-400');
+            selectedBtn.classList.replace('text-slate-300', 'text-white');
+
+            document.getElementById(`btn-next-${qIndex}`).classList.remove('hidden');
+        }
+
+        function nextQuizPage(currentIndex) {
+            const currentStep = document.getElementById(`quiz-q${currentIndex}`);
+            currentStep.classList.add('hidden');
+            currentStep.classList.remove('flex');
+
+            if(currentIndex < 4) {
+                currentQuizSlide++;
+                const nextStep = document.getElementById(`quiz-q${currentQuizSlide}`);
+                nextStep.classList.remove('hidden');
+                nextStep.classList.add('flex');
+
+                document.getElementById('quiz-progress').style.width = `${((currentQuizSlide + 1) / 5) * 100}%`;
+                document.getElementById('quiz-current-text').innerText = currentQuizSlide + 1;
+            } else {
+                calculateAndShowScore();
+            }
+        }
+
+        function calculateAndShowScore() {
+            quizScore = 0;
+            for(let i=0; i<5; i++) {
+                if(userAnswers[i] === correctAnswers[i]) {
+                    quizScore += 20; 
+                }
+            }
+            showFinalScore();
+        }
+
+        function showFinalScore() {
+            const modal = document.getElementById('score-modal');
+            const content = document.getElementById('score-content');
+            const scoreDisplay = document.getElementById('final-score-display');
+            const scoreDesc = document.getElementById('score-desc');
+
+            scoreDisplay.innerText = quizScore;
+            if(quizScore >= 80) {
+                scoreDesc.innerHTML = `Sempurna, Agen <b>${studentData.name}</b>! Nilai kamu sangat tinggi. Kamu adalah ahli kelistrikan sejati.`;
+            } else if(quizScore >= 60) {
+                scoreDesc.innerHTML = `Kerja bagus, Agen <b>${studentData.name}</b>. Pemahamanmu sudah cukup baik, teruslah berlatih!`;
+            } else {
+                scoreDesc.innerHTML = `Misi selesai, Agen <b>${studentData.name}</b>. Namun sepertinya kamu harus lebih banyak belajar di Laboratorium lagi.`;
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-90');
+            }, 50);
+        }
+
+        function resetGameFull() {
+            const modal = document.getElementById('score-modal');
+            const content = document.getElementById('score-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-90');
+            setTimeout(() => { modal.style.display = 'none'; }, 300);
+
+            // Bersihkan data form login
+            document.getElementById('input-name').value = '';
+            document.getElementById('input-class').value = '';
+            studentData = { name: '', class: '' };
+
+            document.querySelectorAll('input[type="radio"]').forEach(el => el.checked = false);
+            resetBoard(); 
+            navigate('page-login');
+        }
+
+        // --- 3. LOGIKA SIMULATOR LABORATORIUM ---
+        const COLS = 30; const ROWS = 20; const CELL_SIZE = 60;
+        let currentTool = 'wire';
+        let grid = []; 
+        let lastPlacedCell = null; 
+        let globalCircuitType = "";
+        let nodeVoltages = new Map();
+
+        let voltmeterVisible = false;
+        let voltmeterPos = {x: 800, y: 300};
+        let probeRedPos = {x: 900, y: 500};
+        let probeBlackPos = {x: 700, y: 500};
+        let isVmDragging = null; 
+        let vmOffsets = { startX: 0, startY: 0, startLeft: 0, startTop: 0 };
+
+        function initGrid() {
+            grid = Array(ROWS).fill().map(() => Array(COLS).fill(null));
+            const interactionLayer = document.getElementById('interaction-layer');
+            const hoverHighlight = document.getElementById('hover-highlight');
+            const workspaceContainer = document.getElementById('workspace-container');
+            
+            function getGridPosition(e) {
+                const rect = interactionLayer.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                let x = clientX - rect.left; let y = clientY - rect.top;
+                let c = Math.floor(x / CELL_SIZE); let r = Math.floor(y / CELL_SIZE);
+                if (c < 0) c = 0; if (c >= COLS) c = COLS - 1;
+                if (r < 0) r = 0; if (r >= ROWS) r = ROWS - 1;
+                return { r, c };
+            }
+
+            interactionLayer.addEventListener('pointermove', (e) => {
+                if(isPanning || isVmDragging || voltmeterVisible) return;
+                const pos = getGridPosition(e);
+                hoverHighlight.style.left = (pos.c * CELL_SIZE) + 'px';
+                hoverHighlight.style.top = (pos.r * CELL_SIZE) + 'px';
+                hoverHighlight.style.display = 'block';
+            });
+            interactionLayer.addEventListener('pointerleave', () => { hoverHighlight.style.display = 'none'; });
+
+            let pointerStartX = 0; let pointerStartY = 0;
+            let isPanning = false; let scrollLeftStart = 0; let scrollTopStart = 0;
+
+            interactionLayer.addEventListener('pointerdown', (e) => {
+                if(e.pointerType === 'mouse' && e.button !== 0) return; 
+                if(voltmeterVisible) return; 
+                if (currentTool === 'pan') {
+                    pointerStartX = e.clientX; pointerStartY = e.clientY;
+                    isPanning = true;
+                    scrollLeftStart = workspaceContainer.scrollLeft; scrollTopStart = workspaceContainer.scrollTop;
+                    interactionLayer.style.cursor = 'grabbing';
+                } else {
+                    const pos = getGridPosition(e);
+                    handleCellAction(pos.r, pos.c);
+                }
+            });
+
+            interactionLayer.addEventListener('wheel', (e) => {
+                if(!voltmeterVisible) {
+                    workspaceContainer.scrollLeft += e.deltaX;
+                    workspaceContainer.scrollTop += e.deltaY;
+                    e.preventDefault(); 
+                }
+            }, { passive: false });
+
+            window.addEventListener('pointermove', (e) => {
+                if (isPanning && !voltmeterVisible) {
+                    const dx = e.clientX - pointerStartX; const dy = e.clientY - pointerStartY;
+                    workspaceContainer.scrollLeft = scrollLeftStart - dx;
+                    workspaceContainer.scrollTop = scrollTopStart - dy;
+                }
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                if (isPanning) { isPanning = false; interactionLayer.style.cursor = 'grab'; }
+            });
+
+            initVoltmeterDrag(); render(); updateStatusUI(); updateAnchorHighlight();
+        }
+
+        function setTool(tool) {
+            if(voltmeterVisible) return; 
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('tool-active');
+                btn.querySelector('span:nth-child(2)').classList.remove('text-cyan-100');
+            });
+            const activeBtn = document.getElementById(`btn-${tool}`);
+            activeBtn.classList.add('tool-active');
+            activeBtn.querySelector('span:nth-child(2)').classList.add('text-cyan-100');
+            updateAnchorHighlight();
+
+            const interactionLayer = document.getElementById('interaction-layer');
+            const workspaceContainer = document.getElementById('workspace-container');
+            if (tool === 'pan') { interactionLayer.style.cursor = 'grab'; workspaceContainer.style.cursor = 'grab'; } 
+            else { interactionLayer.style.cursor = 'crosshair'; workspaceContainer.style.cursor = 'crosshair'; }
+        }
+
+        function updateAnchorHighlight() {
+            const anchorEl = document.getElementById('anchor-highlight');
+            if (lastPlacedCell && currentTool === 'wire' && !voltmeterVisible) {
+                anchorEl.style.left = (lastPlacedCell.c * CELL_SIZE) + 'px';
+                anchorEl.style.top = (lastPlacedCell.r * CELL_SIZE) + 'px';
+                anchorEl.style.display = 'block';
+            } else { anchorEl.style.display = 'none'; }
+        }
+
+        function removeCell(r, c) {
+            if (grid[r][c]) {
+                const dirs = [ {dr: -1, dc: 0, opp: 'bottom'}, {dr: 1, dc: 0, opp: 'top'}, {dr: 0, dc: -1, opp: 'right'}, {dr: 0, dc: 1, opp: 'left'} ];
+                dirs.forEach(d => {
+                    let nr = r + d.dr; let nc = c + d.dc;
+                    if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && grid[nr][nc] && grid[nr][nc].type === 'wire') { grid[nr][nc].connections[d.opp] = false; }
+                });
+                grid[r][c] = null;
+                if (lastPlacedCell && lastPlacedCell.r === r && lastPlacedCell.c === c) lastPlacedCell = null;
+            }
+        }
+
+        function connectToAnchor(r, c) {
+            if (lastPlacedCell && lastPlacedCell.type === 'wire') {
+                let lr = lastPlacedCell.r; let lc = lastPlacedCell.c;
+                if (Math.abs(lr - r) + Math.abs(lc - c) === 1) { 
+                    if (lr === r - 1 && lc === c) { grid[r][c].connections.top = true; grid[lr][lc].connections.bottom = true; }
+                    if (lr === r + 1 && lc === c) { grid[r][c].connections.bottom = true; grid[lr][lc].connections.top = true; }
+                    if (lr === r && lc === c - 1) { grid[r][c].connections.left = true; grid[lr][lc].connections.right = true; }
+                    if (lr === r && lc === c + 1) { grid[r][c].connections.right = true; grid[lr][lc].connections.left = true; }
+                }
+            }
+        }
+
+        function handleCellAction(r, c) {
+            if (currentTool === 'pan' || voltmeterVisible) return; 
+            const cell = grid[r][c];
+
+            if (currentTool === 'erase') { removeCell(r, c); evaluateCircuit(); updateAnchorHighlight(); return; }
+
+            if (cell && cell.type === 'switch') {
+                if (currentTool === 'switch' || currentTool === 'wire') {
+                    cell.state = cell.state === 'closed' ? 'open' : 'closed';
+                    lastPlacedCell = {r, c, type: 'switch'};
+                    evaluateCircuit(); updateAnchorHighlight(); return;
+                }
+            }
+
+            if (currentTool === 'wire') {
+                if (!cell) {
+                    grid[r][c] = { type: 'wire', connections: { top: false, bottom: false, left: false, right: false }, powered: false };
+                    connectToAnchor(r, c);
+                } else if (cell.type === 'wire') {
+                    const dirs = [ {dr: -1, dc: 0, me: 'top', opp: 'bottom'}, {dr: 1, dc: 0, me: 'bottom', opp: 'top'}, {dr: 0, dc: -1, me: 'left', opp: 'right'}, {dr: 0, dc: 1, me: 'right', opp: 'left'} ];
+                    dirs.forEach(d => {
+                        let nr = r + d.dr; let nc = c + d.dc;
+                        if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS && grid[nr][nc]) {
+                            if (grid[nr][nc].type === 'wire') { grid[r][c].connections[d.me] = true; grid[nr][nc].connections[d.opp] = true; }
+                            else { grid[r][c].connections[d.me] = true; }
+                        }
+                    });
+                } else {
+                    removeCell(r, c);
+                    grid[r][c] = { type: 'wire', connections: { top: false, bottom: false, left: false, right: false }, powered: false };
+                    connectToAnchor(r, c);
+                }
+                lastPlacedCell = {r, c, type: 'wire'}; evaluateCircuit(); updateAnchorHighlight(); return;
+            }
+
+            if (cell && cell.type === currentTool) { lastPlacedCell = {r, c, type: currentTool}; updateAnchorHighlight(); return; }
+
+            removeCell(r, c); 
+            grid[r][c] = { type: currentTool, state: currentTool === 'switch' ? 'open' : 'right', powered: false };
+            lastPlacedCell = {r, c, type: currentTool};
+            evaluateCircuit(); updateAnchorHighlight();
+        }
+
+        function traceVoltageSpread(startR, startC, startDir, startV) {
+            let stack = [{r: startR, c: startC, fromDir: startDir, v: startV}];
+            let maxIter = 5000;
+            while(stack.length > 0 && maxIter-- > 0) {
+                let curr = stack.pop(); let key = `${curr.r},${curr.c}`;
+                if(curr.r<0 || curr.r>=ROWS || curr.c<0 || curr.c>=COLS) continue;
+                let cell = grid[curr.r][curr.c]; if(!cell) continue;
+                if(nodeVoltages.has(key) && Math.abs(nodeVoltages.get(key) - curr.v) < 0.1) continue;
+
+                let isConnected = false; let crossBattery = false;
+                let batteryOutV = curr.v; let batteryOutR = -1, batteryOutC = -1, batteryOutDir = '';
+
+                if (cell.type === 'wire') {
+                    if (curr.fromDir === 'all') isConnected = true;
+                    else if (curr.fromDir === 'left' && cell.connections.right) isConnected = true;
+                    else if (curr.fromDir === 'right' && cell.connections.left) isConnected = true;
+                    else if (curr.fromDir === 'top' && cell.connections.bottom) isConnected = true;
+                    else if (curr.fromDir === 'bottom' && cell.connections.top) isConnected = true;
+                } else if (cell.type === 'switch' && cell.state === 'closed') { isConnected = true; }
+                else if (cell.type === 'battery') {
+                    if (curr.fromDir === 'left') { crossBattery = true; batteryOutV = curr.v + 1.5; batteryOutR = curr.r; batteryOutC = curr.c + 1; batteryOutDir = 'left'; nodeVoltages.set(key, curr.v + 0.75); }
+                    else if (curr.fromDir === 'right') { crossBattery = true; batteryOutV = curr.v - 1.5; batteryOutR = curr.r; batteryOutC = curr.c - 1; batteryOutDir = 'right'; nodeVoltages.set(key, curr.v - 0.75); }
+                }
+
+                if (isConnected || curr.fromDir === 'all') {
+                    nodeVoltages.set(key, curr.v);
+                    stack.push({r: curr.r-1, c: curr.c, fromDir: 'bottom', v: curr.v});
+                    stack.push({r: curr.r+1, c: curr.c, fromDir: 'top', v: curr.v});
+                    stack.push({r: curr.r, c: curr.c-1, fromDir: 'right', v: curr.v});
+                    stack.push({r: curr.r, c: curr.c+1, fromDir: 'left', v: curr.v});
+                } else if (crossBattery) { stack.push({r: batteryOutR, c: batteryOutC, fromDir: batteryOutDir, v: batteryOutV}); }
+            }
+        }
+
+        function evaluateCircuit() {
+            let batteryCount = 0; let batteries = []; nodeVoltages.clear();
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(grid[r][c]) {
+                        grid[r][c].powered = false;
+                        if(grid[r][c].type === 'battery') { batteryCount++; batteries.push({r, c}); }
+                    }
+                }
+            }
+
+            if (batteryCount === 0) { updateStatusUI(0); render(); updateVoltmeterReading(); return; }
+
+            let isComplete = false; let poweredNodes = new Set();
+            const startNodeKey = `${batteries[0].r},${batteries[0].c}`;
+            let stack = [{ pos: startNodeKey, path: new Set([startNodeKey]) }];
+            let iterations = 0;
+            const DIRS = [ {dr: -1, dc: 0, dir: 'top'}, {dr: 1, dc: 0, dir: 'bottom'}, {dr: 0, dc: -1, dir: 'left'}, {dr: 0, dc: 1, dir: 'right'} ];
+
+            while(stack.length > 0 && iterations < 3000) {
+                iterations++;
+                let current = stack.pop(); let [cr, cc] = current.pos.split(',').map(Number);
+                let currentCell = grid[cr][cc];
+                for(let d of DIRS) {
+                    let nr = cr + d.dr; let nc = cc + d.dc; let nextNodeKey = `${nr},${nc}`;
+                    if(nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && grid[nr][nc]) {
+                        let nextCell = grid[nr][nc]; let isConnected = false;
+                        if (currentCell.type === 'wire' && nextCell.type === 'wire') { if (currentCell.connections[d.dir]) isConnected = true; }
+                        else { isConnected = true; }
+
+                        if (isConnected) {
+                            if (nextCell.type === 'battery' && nextNodeKey === startNodeKey && current.path.size > 2) {
+                                isComplete = true; current.path.forEach(n => poweredNodes.add(n)); continue; 
+                            }
+                            if(!current.path.has(nextNodeKey)) {
+                                let isConductive = (nextCell.type === 'wire' || nextCell.type === 'bulb' || nextCell.type === 'battery' || (nextCell.type === 'switch' && nextCell.state === 'closed'));
+                                if(isConductive) { let newPath = new Set(current.path); newPath.add(nextNodeKey); stack.push({ pos: nextNodeKey, path: newPath }); }
+                            }
+                        }
+                    }
+                }
+            }
+
+            globalCircuitType = ""; let bulbCount = 0; let maxDegree = 0;
+
+            if (isComplete) {
+                poweredNodes.forEach(node => {
+                    let [r, c] = node.split(',').map(Number);
+                    if(grid[r][c]) { grid[r][c].powered = true; if (grid[r][c].type === 'bulb') bulbCount++; }
+                    let degree = 0; let currentCell = grid[r][c];
+                    for(let d of DIRS) {
+                        let nr = r + d.dr; let nc = c + d.dc;
+                        if (poweredNodes.has(`${nr},${nc}`)) {
+                            let nextCell = grid[nr][nc]; let isConnected = false;
+                            if (currentCell.type === 'wire' && nextCell.type === 'wire') { if (currentCell.connections[d.dir]) isConnected = true; }
+                            else { isConnected = true; }
+                            if (isConnected) degree++;
+                        }
+                    }
+                    if (degree > maxDegree) maxDegree = degree;
+                });
+
+                if (bulbCount === 0) globalCircuitType = "Korsleting! (Tanpa Beban)";
+                else if (maxDegree >= 3) globalCircuitType = "Rangkaian Paralel";
+                else if (bulbCount >= 2) globalCircuitType = "Rangkaian Seri";
+                else globalCircuitType = "Rangkaian Sederhana";
+            }
+
+            batteries.forEach(batt => {
+                let key = `${batt.r},${batt.c}`;
+                if (!nodeVoltages.has(key)) {
+                    nodeVoltages.set(key, 0.75); 
+                    traceVoltageSpread(batt.r, batt.c + 1, 'left', 1.5); traceVoltageSpread(batt.r, batt.c - 1, 'right', 0);  
+                }
+            });
+
+            if (globalCircuitType.includes('Korsleting')) nodeVoltages.clear(); 
+            updateStatusUI(isComplete ? 2 : 1, globalCircuitType); render(); updateVoltmeterReading();
+        }
+
+        function initVoltmeterDrag() {
+            const parts = [ {id: 'vm-body', name: 'body'}, {id: 'vm-probe-red', name: 'red'}, {id: 'vm-probe-black', name: 'black'} ];
+            parts.forEach(p => {
+                const el = document.getElementById(p.id);
+                el.addEventListener('pointerdown', (e) => {
+                    if(e.pointerType === 'mouse' && e.button !== 0) return;
+                    e.preventDefault(); e.stopPropagation(); 
+                    isVmDragging = p.name;
+                    vmOffsets.startX = e.clientX; vmOffsets.startY = e.clientY;
+                    if (p.name === 'body') { vmOffsets.startLeft = voltmeterPos.x; vmOffsets.startTop = voltmeterPos.y; }
+                    else if (p.name === 'red') { vmOffsets.startLeft = probeRedPos.x; vmOffsets.startTop = probeRedPos.y; }
+                    else { vmOffsets.startLeft = probeBlackPos.x; vmOffsets.startTop = probeBlackPos.y; }
+                    el.style.cursor = 'grabbing';
+                });
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (isVmDragging) {
+                    const dx = e.clientX - vmOffsets.startX; const dy = e.clientY - vmOffsets.startY;
+                    if (isVmDragging === 'body') { voltmeterPos.x = vmOffsets.startLeft + dx; voltmeterPos.y = vmOffsets.startTop + dy; }
+                    else if (isVmDragging === 'red') { probeRedPos.x = vmOffsets.startLeft + dx; probeRedPos.y = vmOffsets.startTop + dy; }
+                    else if (isVmDragging === 'black') { probeBlackPos.x = vmOffsets.startLeft + dx; probeBlackPos.y = vmOffsets.startTop + dy; }
+                    updateVoltmeterVisuals(); updateVoltmeterReading();
+                }
+            });
+
+            window.addEventListener('pointerup', () => {
+                if (isVmDragging) { document.getElementById('vm-' + (isVmDragging === 'body' ? 'body' : 'probe-' + isVmDragging)).style.cursor = 'grab'; isVmDragging = null; }
+            });
+        }
+
+        function toggleVoltmeter(e) {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            voltmeterVisible = !voltmeterVisible;
+            
+            const layer = document.getElementById('voltmeter-layer');
+            const ws = document.getElementById('workspace-container');
+            const sidebarMenu = document.getElementById('sidebar-menu');
+            const btnToggle = document.getElementById('btn-toggle-vm');
+            const interactionLayer = document.getElementById('interaction-layer');
+            const instruction = document.getElementById('footer-instructions'); 
+            
+            if (voltmeterVisible) {
+                layer.classList.remove('hidden');
+                sidebarMenu.classList.add('opacity-50', 'pointer-events-none', 'grayscale');
+                interactionLayer.style.cursor = 'not-allowed';
+                
+                if(instruction) instruction.innerHTML = `<span class="font-bold text-yellow-400">Mode Mengukur:</span> <span class="text-slate-300 ml-1">Geser ujung probe merah dan hitam ke kabel rangkaian. Alat terkunci.</span>`;
+
+                btnToggle.classList.replace('bg-yellow-500', 'bg-red-500');
+                btnToggle.classList.replace('text-yellow-900', 'text-white');
+                btnToggle.classList.replace('border-yellow-600', 'border-red-600');
+                btnToggle.classList.replace('hover:bg-yellow-400', 'hover:bg-red-400');
+                btnToggle.innerHTML = `<span class="text-2xl">✖️</span><span class="text-[9px] font-extrabold tracking-wider uppercase mt-1">Tutup</span>`;
+
+                let spawnY = ws.scrollTop + ws.clientHeight - 80;
+                if (spawnY > 1150) spawnY = 1150; 
+
+                voltmeterPos = {x: ws.scrollLeft + ws.clientWidth / 2, y: spawnY};
+                probeBlackPos = {x: ws.scrollLeft + ws.clientWidth / 2 - 80, y: spawnY - 80};
+                probeRedPos = {x: ws.scrollLeft + ws.clientWidth / 2 + 80, y: spawnY - 80};
+                
+                updateVoltmeterVisuals(); updateVoltmeterReading(); updateAnchorHighlight();
+            } else {
+                layer.classList.add('hidden');
+                sidebarMenu.classList.remove('opacity-50', 'pointer-events-none', 'grayscale');
+                interactionLayer.style.cursor = currentTool === 'pan' ? 'grab' : 'crosshair';
+
+                if(instruction) instruction.innerHTML = `<span class="font-bold text-yellow-400">Cara Penggunaan:</span> <span class="text-slate-300 ml-1">Pilih alat di kiri, ketuk kanvas. Untuk menutup sambungan kabel yang terputus, ketuk lagi ujung kabel tersebut.</span>`;
+
+                btnToggle.classList.replace('bg-red-500', 'bg-yellow-500');
+                btnToggle.classList.replace('text-white', 'text-yellow-900');
+                btnToggle.classList.replace('border-red-600', 'border-yellow-600');
+                btnToggle.classList.replace('hover:bg-red-400', 'hover:bg-yellow-400');
+                btnToggle.innerHTML = `<span class="text-2xl">🎛️</span><span class="text-[9px] font-extrabold tracking-wider uppercase mt-1">Voltmeter</span>`;
+            }
+        }
+
+        function updateVoltmeterVisuals() {
+            document.getElementById('vm-body').style.left = voltmeterPos.x + 'px'; document.getElementById('vm-body').style.top = voltmeterPos.y + 'px';
+            document.getElementById('vm-probe-red').style.left = probeRedPos.x + 'px'; document.getElementById('vm-probe-red').style.top = probeRedPos.y + 'px';
+            document.getElementById('vm-probe-black').style.left = probeBlackPos.x + 'px'; document.getElementById('vm-probe-black').style.top = probeBlackPos.y + 'px';
+            const bodyRedX = voltmeterPos.x + 18; const bodyRedY = voltmeterPos.y + 35;
+            const bodyBlackX = voltmeterPos.x - 18; const bodyBlackY = voltmeterPos.y + 35;
+            const prX = probeRedPos.x; const prBottomY = probeRedPos.y + 48;
+            const pbX = probeBlackPos.x; const pbBottomY = probeBlackPos.y + 48;
+            document.getElementById('vm-cable-red').setAttribute('d', `M ${bodyRedX},${bodyRedY} C ${bodyRedX},${bodyRedY+80} ${prX},${prBottomY+80} ${prX},${prBottomY}`);
+            document.getElementById('vm-cable-black').setAttribute('d', `M ${bodyBlackX},${bodyBlackY} C ${bodyBlackX},${bodyBlackY+80} ${pbX},${pbBottomY+80} ${pbX},${pbBottomY}`);
+        }
+
+        function getVoltageAt(x, y) {
+            let c = Math.floor(x / CELL_SIZE); let r = Math.floor(y / CELL_SIZE);
+            if(c < 0 || c >= COLS || r < 0 || r >= ROWS) return null;
+            let cell = grid[r][c]; let key = `${r},${c}`;
+
+            if(cell && cell.type === 'battery') {
+                if (globalCircuitType.includes('Korsleting')) return 0;
+                let relX = x % CELL_SIZE; let baseV = nodeVoltages.has(key) ? nodeVoltages.get(key) : null;
+                if (baseV !== null) { if(relX < CELL_SIZE / 2) return baseV - 0.75; else return baseV + 0.75; }
+                return null;
+            }
+            if(nodeVoltages.has(key)) return nodeVoltages.get(key);
+            return null;
+        }
+
+        function updateVoltmeterReading() {
+            if (!voltmeterVisible) return;
+            let vRed = getVoltageAt(probeRedPos.x, probeRedPos.y); let vBlack = getVoltageAt(probeBlackPos.x, probeBlackPos.y);
+            const display = document.getElementById('vm-display');
+            if (vRed !== null && vBlack !== null) {
+                let diff = vRed - vBlack; display.innerText = (diff > 0 ? "" : "") + diff.toFixed(2) + " V";
+            } else { display.innerText = "0.00 V"; }
+        }
+
+        function updateStatusUI(statusCode = 0, circuitType = "") {
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            if (statusCode === 0) {
+                statusDot.className = 'w-3 h-3 rounded-full bg-slate-500';
+                statusText.innerHTML = 'Menunggu Baterai';
+                statusText.className = 'text-sm font-bold text-slate-400 leading-tight';
+            } else if (statusCode === 1) {
+                statusDot.className = 'w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-pulse';
+                statusText.innerHTML = 'Rangkaian Terbuka';
+                statusText.className = 'text-sm font-bold text-red-400 leading-tight';
+            } else if (statusCode === 2) {
+                if (circuitType.includes('Korsleting')) {
+                    statusDot.className = 'w-3 h-3 rounded-full bg-orange-500 shadow-[0_0_8px_#f97316] animate-pulse';
+                    statusText.innerHTML = `Arus Mengalir<br><div class="flex items-center gap-1.5 mt-0.5 pointer-events-auto"><span class="text-[11px] text-orange-400 uppercase tracking-wide font-extrabold opacity-90">${circuitType}</span><button onclick="openExplanation('${circuitType}')" class="flex items-center justify-center w-4 h-4 bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 rounded-full cursor-pointer transition-all border border-orange-500/50" title="Analisis"><span class="text-[10px] font-bold">?</span></button></div>`;
+                    statusText.className = 'text-sm font-bold text-orange-400 leading-tight';
+                } else {
+                    statusDot.className = 'w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]';
+                    statusText.innerHTML = `Arus Mengalir<br><div class="flex items-center gap-1.5 mt-0.5 pointer-events-auto"><span class="text-[11px] text-cyan-300 uppercase tracking-wide font-extrabold opacity-90">${circuitType}</span><button onclick="openExplanation('${circuitType}')" class="flex items-center justify-center w-4 h-4 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 rounded-full cursor-pointer transition-all border border-cyan-500/50" title="Analisis"><span class="text-[10px] font-bold">?</span></button></div>`;
+                    statusText.className = 'text-sm font-bold text-cyan-400 leading-tight';
+                }
+            }
+        }
+
+        function openExplanation(type) {
+            const modal = document.getElementById('explanation-modal');
+            const title = document.getElementById('modal-title');
+            const text = document.getElementById('modal-text');
+            const icon = document.getElementById('modal-icon');
+            const content = document.getElementById('explanation-content');
+
+            if (type.includes("Korsleting")) {
+                title.innerText = "Bahaya: Korsleting!"; title.className = "text-xl font-extrabold text-red-500";
+                icon.innerText = "🔥"; icon.className = "w-10 h-10 rounded-full flex items-center justify-center text-xl bg-red-500/20 text-red-400 border border-red-500/50";
+                text.innerHTML = "Rangkaian mengalami <b>Short Circuit</b>! Arus listrik mengalir langsung dari kutub (+) ke (-) tanpa beban.<br><br>Gunakan Voltmeter! Tegangan kabel akan jatuh menjadi <b>0.00 V</b> karena arusnya bocor. Ini bisa menyebabkan sistem terbakar.";
+            } else if (type === "Rangkaian Paralel") {
+                title.innerText = "Rangkaian Paralel"; title.className = "text-xl font-extrabold text-cyan-400";
+                icon.innerText = "🔀"; icon.className = "w-10 h-10 rounded-full flex items-center justify-center text-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/50";
+                text.innerHTML = "Sistem mengidentifikasi ini sebagai <b>Rangkaian Paralel</b>.<br><br>Arus listrik memiliki jalur bercabang. Jika satu jalur diputus sakelar, jalur lain tetap menyala. Ukur ujung lampu dengan Voltmeter: tegangan tiap cabang selalu sama dengan tegangan baterai utama!";
+            } else if (type === "Rangkaian Seri") {
+                title.innerText = "Rangkaian Seri"; title.className = "text-xl font-extrabold text-emerald-400";
+                icon.innerText = "⛓️"; icon.className = "w-10 h-10 rounded-full flex items-center justify-center text-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/50";
+                text.innerHTML = "Sistem mengidentifikasi ini sebagai <b>Rangkaian Seri</b>.<br><br>Komponen disusun berurutan dalam satu jalur tunggal. Jika satu sakelar dibuka, semua mati. Tegangan baterai akan terbagi ke setiap lampu.";
+            } else if (type === "Rangkaian Sederhana") {
+                title.innerText = "Rangkaian Sederhana"; title.className = "text-xl font-extrabold text-white";
+                icon.innerText = "💡"; icon.className = "w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-700 text-white border border-slate-600";
+                text.innerHTML = "Ini adalah <b>Rangkaian Listrik Sederhana</b>.<br><br>Arus mengalir dari kutub (+) melewati kabel & beban, lalu kembali ke kutub (-).";
+            }
+
+            modal.classList.remove('hidden');
+            void modal.offsetWidth; 
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('explanation-modal');
+            const content = document.getElementById('explanation-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function render() {
+            const svg = document.getElementById('svg-layer');
+            let svgContent = '';
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = grid[r][c]; if (!cell) continue;
+                    const cx = (c * CELL_SIZE) + (CELL_SIZE / 2); const cy = (r * CELL_SIZE) + (CELL_SIZE / 2);
+                    const isPowered = cell.powered;
+                    
+                    const strokeColor = isPowered ? '#0ea5e9' : '#475569'; 
+                    const strokeWidth = 6;
+                    const isComp = cell.type !== 'wire';
+                    const hasTop = isComp ? (r > 0 && grid[r-1][c] !== null) : (cell.connections.top || (r > 0 && grid[r-1][c] && grid[r-1][c].type !== 'wire'));
+                    const hasBottom = isComp ? (r < ROWS-1 && grid[r+1][c] !== null) : (cell.connections.bottom || (r < ROWS-1 && grid[r+1][c] && grid[r+1][c].type !== 'wire'));
+                    const hasLeft = isComp ? (c > 0 && grid[r][c-1] !== null) : (cell.connections.left || (c > 0 && grid[r][c-1] && grid[r][c-1].type !== 'wire'));
+                    const hasRight = isComp ? (c < COLS-1 && grid[r][c+1] !== null) : (cell.connections.right || (c < COLS-1 && grid[r][c+1] && grid[r][c+1].type !== 'wire'));
+
+                    if(cell.type !== 'battery') {
+                        let lines = '';
+                        if(hasTop) lines += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - CELL_SIZE/2}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+                        if(hasBottom) lines += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy + CELL_SIZE/2}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+                        if(hasLeft) lines += `<line x1="${cx}" y1="${cy}" x2="${cx - CELL_SIZE/2}" y2="${cy}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+                        if(hasRight) lines += `<line x1="${cx}" y1="${cy}" x2="${cx + CELL_SIZE/2}" y2="${cy}" stroke="${strokeColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+                        if(cell.type === 'wire' && !hasTop && !hasBottom && !hasLeft && !hasRight) lines += `<circle cx="${cx}" cy="${cy}" r="5" fill="${strokeColor}"/>`;
+
+                        if(isPowered) {
+                            const eColor = '#fcd34d'; 
+                            if(hasTop) lines += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - CELL_SIZE/2}" stroke="${eColor}" stroke-width="2" class="electron-line"/>`;
+                            if(hasBottom) lines += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy + CELL_SIZE/2}" stroke="${eColor}" stroke-width="2" class="electron-line"/>`;
+                            if(hasLeft) lines += `<line x1="${cx}" y1="${cy}" x2="${cx - CELL_SIZE/2}" y2="${cy}" stroke="${eColor}" stroke-width="2" class="electron-line"/>`;
+                            if(hasRight) lines += `<line x1="${cx}" y1="${cy}" x2="${cx + CELL_SIZE/2}" y2="${cy}" stroke="${eColor}" stroke-width="2" class="electron-line"/>`;
+                        }
+                        svgContent += lines;
+                    }
+
+                    if (cell.type === 'battery') {
+                        svgContent += `<g transform="translate(${cx - 25}, ${cy - 15})">
+                            ${hasLeft ? `<line x1="0" y1="15" x2="-10" y2="15" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>` : ''}
+                            ${hasRight ? `<line x1="50" y1="15" x2="60" y2="15" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>` : ''}
+                            ${hasTop ? `<line x1="25" y1="0" x2="25" y2="-10" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>` : ''}
+                            ${hasBottom ? `<line x1="25" y1="30" x2="25" y2="40" stroke="${strokeColor}" stroke-width="${strokeWidth}"/>` : ''}
+                            <rect x="5" y="0" width="40" height="30" fill="#1e293b" rx="4"/>
+                            <rect x="25" y="0" width="20" height="30" fill="#ef4444" rx="4"/>
+                            <rect x="43" y="10" width="4" height="10" fill="#cbd5e1" rx="1"/>
+                            <text x="12" y="20" fill="white" font-size="14" font-family="sans-serif" font-weight="bold">-</text>
+                            <text x="32" y="20" fill="white" font-size="14" font-family="sans-serif" font-weight="bold">+</text>
+                        </g>`;
+                    }
+                    else if (cell.type === 'bulb') {
+                        const bulbColor = isPowered ? '#fde047' : '#1e293b'; 
+                        const glowClass = isPowered ? 'bulb-glow' : '';
+                        const strokeBulb = isPowered ? '#ca8a04' : '#475569';
+                        svgContent += `<g transform="translate(${cx - 20}, ${cy - 20})" class="${glowClass}">
+                            <circle cx="20" cy="14" r="12" fill="${bulbColor}" stroke="${strokeBulb}" stroke-width="2"/>
+                            ${isPowered ? `<path d="M15 16 Q20 8 25 16" fill="none" stroke="#ca8a04" stroke-width="1.5"/>` : `<path d="M15 16 Q20 8 25 16" fill="none" stroke="#475569" stroke-width="1.5"/>`}
+                            <path d="M14 24 L26 24 L24 30 L16 30 Z" fill="#334155" />
+                            <rect x="18" y="30" width="4" height="4" fill="#94a3b8" rx="1"/>
+                        </g>`;
+                    }
+                    else if (cell.type === 'switch') {
+                        const isClosed = cell.state === 'closed';
+                        svgContent += `<g transform="translate(${cx - 20}, ${cy - 10})">
+                            <circle cx="5" cy="10" r="4" fill="#94a3b8"/>
+                            <circle cx="35" cy="10" r="4" fill="#94a3b8"/>
+                            ${isClosed ? `<line x1="5" y1="10" x2="35" y2="10" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>` : `<line x1="5" y1="10" x2="28" y2="-5" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>`}
+                        </g>`;
+                    }
+                }
+            }
+            svg.innerHTML = svgContent;
+        }
+
+        function resetBoard() {
+            lastPlacedCell = null;
+            if(voltmeterVisible) toggleVoltmeter();
+            initGrid();
+        }
+
+        // Initialize Simulator
+        window.onload = initGrid;
+
+    </script>
+</body>
+</html>
